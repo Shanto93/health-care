@@ -13,9 +13,65 @@ datasource db {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  password  String
-  name      String?
-  createdAt DateTime @default(now())
+  id                 Int        @id @default(autoincrement())
+  email              String     @unique
+  password           String
+  needPasswordChange Boolean    @default(true)
+  role               UserRole   @default(PATIENT)
+  status             UserStatus @default(ACTIVE)
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
+
+  @@map("users")
+}
+
+enum UserRole {
+  ADMIN
+  DOCTOR
+  PATIENT
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  DELETED
+}
+
+model Doctor {
+  id                  Int      @id @default(autoincrement())
+  email               String   @unique
+  name                String
+  profilePhoto        String?
+  contactNumber       String
+  address             String
+  expertise           String
+  gender              Gender
+  appointmentFee      Float
+  qualifications      String
+  currentWorkingPlace String
+  designation         String
+  isDeleted           Boolean  @default(false)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@map("doctors")
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+model Admin {
+  id            Int      @id @default(autoincrement())
+  email         String   @unique
+  name          String
+  profilePhoto  String?
+  contactNumber String
+  isDeleted     Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("admins")
 }
