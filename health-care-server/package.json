@@ -2,21 +2,26 @@
   "name": "ph-health-care-starter",
   "version": "1.0.0",
   "main": "server.js",
-  "author": "shafayat",
+  "author": "Shanto",
   "license": "MIT",
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only ./src/server.ts"
   },
   "dependencies": {
+    "@prisma/adapter-pg": "^7.4.2",
+    "@prisma/client": "^7.4.2",
     "cors": "^2.8.5",
-    "dotenv": "^17.2.2",
+    "dotenv": "^17.3.1",
     "express": "^5.1.0",
-    "http-status": "^2.1.0"
+    "http-status": "^2.1.0",
+    "pg": "^8.20.0"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.3",
     "@types/node": "^24.5.0",
+    "@types/pg": "^8.18.0",
+    "prisma": "^7.4.2",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.9.2"
   }
