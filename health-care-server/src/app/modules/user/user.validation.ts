@@ -14,6 +14,7 @@ const createPatientValidation = z.object({
     email: z.email("Invalid email address"),
     contactNumber: z.string(),
     address: z.string().optional(),
+    role: z.enum(["PATIENT"]).default("PATIENT"),
   }),
 });
 
@@ -40,6 +41,7 @@ const createDoctorValidation = z.object({
     appointmentFee: z.number({
       error: "appointment fee is required",
     }),
+    role: z.enum(["DOCTOR"]).default("DOCTOR"),
     qualification: z.string({
       error: "quilification is required",
     }),
@@ -66,6 +68,8 @@ const createAdminValidation = z.object({
     contactNumber: z.string({
       error: "Contact Number is required!",
     }),
+    expertise: z.string("Expertise is required!").optional(),
+    role: z.enum(["ADMIN"]).default("ADMIN"),
   }),
 });
 

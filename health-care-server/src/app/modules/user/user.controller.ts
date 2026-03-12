@@ -4,7 +4,6 @@ import sendResponse from "../../shared/sendResponse";
 import { UserServices } from "./user.services";
 
 const createPatient = catchAsync(async (req: Request, res: Response) => {
-  // console.log(req)
   const result = await UserServices.createPatient(req);
 
   sendResponse(res, {
@@ -16,7 +15,6 @@ const createPatient = catchAsync(async (req: Request, res: Response) => {
 });
 
 const createDoctor = catchAsync(async (req: Request, res: Response) => {
-  // console.log(req)
   const result = await UserServices.createDoctor(req);
 
   sendResponse(res, {
@@ -28,7 +26,6 @@ const createDoctor = catchAsync(async (req: Request, res: Response) => {
 });
 
 const createAdmin = catchAsync(async (req: Request, res: Response) => {
-  // console.log(req)
   const result = await UserServices.createAdmin(req);
 
   sendResponse(res, {

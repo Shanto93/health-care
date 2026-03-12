@@ -56,7 +56,10 @@ const createDoctor = async (req: Request) => {
 
     // Create the Doctor profile
     return await tnx.doctor.create({
-      data: req.body.doctor,
+      data: {
+        ...req.body.doctor,
+        email: newUser.email,
+      },
     });
   });
 
@@ -85,7 +88,10 @@ const createAdmin = async (req: Request) => {
 
     // Create the Admin profile
     return await tnx.admin.create({
-      data: req.body.admin,
+      data: {
+        ...req.body.admin,
+        email: newUser.email,
+      },
     });
   });
 

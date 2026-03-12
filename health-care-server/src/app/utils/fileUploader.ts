@@ -16,7 +16,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage: storage });
 
 const uploadToCloudinary = async (file: Express.Multer.File) => {
-  console.log(file);
+  // console.log(file);
   cloudinary.config({
     cloud_name: config.cloudinary.cloud_name,
     api_key: config.cloudinary.api_key,
@@ -38,7 +38,7 @@ const uploadToCloudinary = async (file: Express.Multer.File) => {
       if (err) {
         console.error("Error deleting file:", err);
       } else {
-        console.log("File deleted successfully");
+        // console.log("File deleted successfully");
       }
     });
   }
