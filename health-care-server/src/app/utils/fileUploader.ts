@@ -1,4 +1,5 @@
 import { v2 as cloudinary } from "cloudinary";
+import fs from "fs";
 import multer from "multer";
 import config from "../../config";
 
@@ -26,10 +27,21 @@ const uploadToCloudinary = async (file: Express.Multer.File) => {
   const uploadResult = await cloudinary.uploader
     .upload(file.path, {
       public_id: file.filename,
+      folder: "ph-healthcare/profile-photos",
     })
     .catch((error) => {
       console.log(error);
     });
+
+  if (uploadResult) {
+    fs.unlink(file.path, (err) => {
+      if (err) {
+        console.error("Error deleting file:", err);
+      } else {
+        console.log("File deleted successfully");
+      }
+    });
+  }
 
   return uploadResult?.secure_url;
 };
