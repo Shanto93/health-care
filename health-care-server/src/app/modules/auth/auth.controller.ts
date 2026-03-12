@@ -5,7 +5,7 @@ import { AuthServices } from "./auth.services";
 
 const login = catchAsync(async (req: Request, res: Response) => {
   const result = await AuthServices.login(req.body);
-  console.log(result);
+  //   console.log(result);
 
   res.cookie("accessToken", result.accessToken, {
     httpOnly: true,
