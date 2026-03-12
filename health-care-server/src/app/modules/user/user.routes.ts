@@ -24,10 +24,10 @@ router.post(
   "/create-doctor",
   fileUploader.upload.single("file"),
   (req: Request, res: Response, next: NextFunction) => {
-    req.body = UserValidation.createPatientValidation.parse(
+    req.body = UserValidation.createDoctorValidation.parse(
       JSON.parse(req.body.data),
     );
-    return UserController.createPatient(req, res, next);
+    return UserController.createDoctor(req, res, next);
   },
 );
 
@@ -35,10 +35,10 @@ router.post(
   "/create-admin",
   fileUploader.upload.single("file"),
   (req: Request, res: Response, next: NextFunction) => {
-    req.body = UserValidation.createPatientValidation.parse(
+    req.body = UserValidation.createAdminValidation.parse(
       JSON.parse(req.body.data),
     );
-    return UserController.createPatient(req, res, next);
+    return UserController.createAdmin(req, res, next);
   },
 );
 
