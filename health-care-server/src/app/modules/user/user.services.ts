@@ -5,6 +5,10 @@ import config from "../../../config";
 import { prisma } from "../../shared/prisma";
 import { fileUploader } from "../../utils/fileUploader";
 
+const getAllUsers = async () => {
+  const users = await prisma.user.findMany();
+}
+
 const createPatient = async (req: Request) => {
   if (req.file) {
     const uploadResult = await fileUploader.uploadToCloudinary(req.file);
