@@ -1,15 +1,21 @@
+import { UserRole } from "@prisma/client";
 import express, {
   type NextFunction,
   type Request,
   type Response,
 } from "express";
+import auth from "../../middlewares/auth";
 import { fileUploader } from "../../utils/fileUploader";
 import { UserController } from "./user.controller";
 import { UserValidation } from "./user.validation";
 
 const router = express.Router();
 
-router.get("/", UserController.getAllUsers);
+router.get(
+  "/",
+  auth(UserRole.ADMIN, UserRole.DOCTOR, UserRole.PATIENT),
+  UserController.getAllUsers,
+);
 
 router.post(
   "/create-patient",

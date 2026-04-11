@@ -3,8 +3,8 @@ import bcrypt from "bcryptjs";
 import { Secret, SignOptions } from "jsonwebtoken";
 import config from "../../../config";
 import { prisma } from "../../shared/prisma";
-import generateToken from "../../utils/generateToken";
 import { IAuthInfo } from "./auth.interfaces";
+import { generateToken } from "../../utils/generateToken";
 
 const login = async (payload: IAuthInfo) => {
   const user = await prisma.user.findUniqueOrThrow({
