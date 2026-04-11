@@ -5,9 +5,37 @@ import config from "../../../config";
 import { prisma } from "../../shared/prisma";
 import { fileUploader } from "../../utils/fileUploader";
 
-const getAllUsers = async () => {
-  const users = await prisma.user.findMany();
-}
+const getAllUsers = async (filters: {
+  page?: number;
+  limit?: number;
+  searchTerm?: string;
+  sortBy?: string; 
+  sortOrder?: string;
+}) => {
+  const { page, limit, searchTerm, sortBy, sortOrder } = filters;
+
+  const skip = page && limit ? (page - 1) * limit : undefined;
+  const take = limit ? limit : undefined;
+
+  const validSortOrder = sortOrder === "desc" ? "desc" : "asc";
+  const validSortBy = sortBy || "createdAt";
+
+  const users = await prisma.user.findMany({
+    skip,
+    take,
+    where: {
+      email: {
+        contains: searchTerm,
+        mode: "insensitive",
+      },
+    },
+    orderBy: {
+      [validSortBy]: validSortOrder,
+    },
+  });
+
+  return users;
+};
 
 const createPatient = async (req: Request) => {
   if (req.file) {
@@ -103,6 +131,7 @@ const createAdmin = async (req: Request) => {
 };
 
 export const UserServices = {
+  getAllUsers,
   createPatient,
   createDoctor,
   createAdmin,
