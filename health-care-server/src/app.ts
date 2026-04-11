@@ -1,4 +1,4 @@
-import cookieParser from "cookie-parser";
+import cookieParser from "cookie-parser"; // 1. Import cookie parser
 import cors from "cors";
 import express, { Application, Request, Response } from "express";
 import globalErrorHandler from "./app/middlewares/globalErrorHandler";
@@ -7,6 +7,7 @@ import router from "./app/routes";
 import config from "./config";
 
 const app: Application = express();
+
 app.use(
   cors({
     origin: ["http://localhost:3000", "http://localhost:5000"],
@@ -14,10 +15,14 @@ app.use(
   }),
 );
 
-//parser
-app.use(express.json());
+// 2. Initialize cookie parser before your routes
 app.use(cookieParser());
+
+// parsers
+app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// routes
 app.use("/api/v1", router);
 
 app.get("/", (req: Request, res: Response) => {
@@ -30,7 +35,6 @@ app.get("/", (req: Request, res: Response) => {
 });
 
 app.use(globalErrorHandler);
-
 app.use(notFound);
 
 export default app;
