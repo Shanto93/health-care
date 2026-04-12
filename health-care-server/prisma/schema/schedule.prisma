@@ -7,3 +7,14 @@ model Schedule {
 
     @@map("schedules")
 }
+
+model DoctorSchedules {
+    doctorId   String
+    scheduleId String
+    isBooked   Boolean  @default(false)
+    createdAt  DateTime @default(now())
+    updatedAt  DateTime @updatedAt
+
+    @@id([doctorId, scheduleId])
+    @@map("doctor_schedules")
+}
