@@ -4,3 +4,8 @@ export interface ISchedulePayload {
   startTime: string;
   endTime: string;
 }
+
+export interface IScheduleFilters {
+  startDateTime?: string;
+  endDateTime?: string;
+}

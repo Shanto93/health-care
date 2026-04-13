@@ -1,5 +1,8 @@
+import { Prisma } from "@prisma/client";
 import { prisma } from "../../shared/prisma";
-import { ISchedulePayload } from "./schedule.interface";
+import { paginationHelper } from "../../utils/paginationHelper";
+import { IOptions } from "../user/user.interfaces";
+import { IScheduleFilters, ISchedulePayload } from "./schedule.interface";
 
 const insertIntoDB = async (payload: ISchedulePayload) => {
   const { startTime, endTime, startDate, endDate } = payload;
@@ -88,8 +91,69 @@ const insertIntoDB = async (payload: ISchedulePayload) => {
   return createdSchedules;
 };
 
+const schedulesForDoctor = async (
+  filters: IScheduleFilters,
+  options: IOptions,
+) => {
+  const { page, limit, skip, sortBy, sortOrder } =
+    paginationHelper.calculatePagination(options);
+  const { startDateTime, endDateTime } = filters;
+
+  const andConditions: Prisma.ScheduleWhereInput[] = [];
+
+  if (startDateTime && endDateTime) {
+    andConditions.push({
+      AND: [
+        {
+          startDateTime: {
+            gte: startDateTime,
+          },
+        },
+        {
+          endDateTime: {
+            lte: endDateTime,
+          },
+        },
+      ],
+    });
+  }
+
+  const whereCondition: Prisma.ScheduleWhereInput =
+    andConditions.length > 0 ? { AND: andConditions } : {};
+
+  const schedules = await prisma.schedule.findMany({
+    skip,
+    take: limit,
+    where: whereCondition,
+    orderBy: {
+      [sortBy]: sortOrder,
+    },
+  });
+
+  const total = await prisma.schedule.count({ where: whereCondition });
+
+  return {
+    meta: {
+      page,
+      limit,
+      total,
+    },
+    data: schedules,
+  };
+};
+
+const deleteSchedule = async (scheduleId: string) => {
+  return await prisma.schedule.delete({
+    where: {
+      id: scheduleId,
+    },
+  });
+};
+
 export const ScheduleServices = {
   insertIntoDB,
+  schedulesForDoctor,
+  deleteSchedule,
 };
 
 // ---------------------------- old code -----------------------------
