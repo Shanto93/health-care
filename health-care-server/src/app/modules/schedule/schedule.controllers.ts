@@ -1,4 +1,5 @@
 import type { Request, Response } from "express";
+import { JwtPayload } from "jsonwebtoken";
 import catchAsync from "../../shared/catchAsync";
 import sendResponse from "../../shared/sendResponse";
 import pick from "../../utils/pick";
@@ -19,19 +20,26 @@ const insertIntoDB = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-const schedulesForDoctor = catchAsync(async (req: Request, res: Response) => {
-  const filters = pick(req.query, scheduleFilterableFields);
-  const options = pick(req.query, scheduleOptionsFields);
-  const result = await ScheduleServices.schedulesForDoctor(filters, options);
+const schedulesForDoctor = catchAsync(
+  async (req: Request & { user?: JwtPayload }, res: Response) => {
+    const user = req.user;
+    const filters = pick(req.query, scheduleFilterableFields);
+    const options = pick(req.query, scheduleOptionsFields);
+    const result = await ScheduleServices.schedulesForDoctor(
+      user,
+      filters,
+      options,
+    );
 
-  sendResponse(res, {
-    statusCode: 201,
-    success: true,
-    message: "Schedule Retrived Successfully!",
-    meta: result.meta,
-    data: result.data,
-  });
-});
+    sendResponse(res, {
+      statusCode: 201,
+      success: true,
+      message: "Schedule Retrived Successfully!",
+      meta: result.meta,
+      data: result.data,
+    });
+  },
+);
 
 const deleteSchedule = catchAsync(async (req: Request, res: Response) => {
   const result = await ScheduleServices.deleteSchedule(req.params.id);

@@ -1,4 +1,5 @@
 import { Prisma } from "@prisma/client";
+import { JwtPayload } from "jsonwebtoken";
 import { prisma } from "../../shared/prisma";
 import { paginationHelper } from "../../utils/paginationHelper";
 import { IOptions } from "../user/user.interfaces";
@@ -42,30 +43,39 @@ const insertIntoDB = async (payload: ISchedulePayload) => {
     currentDate = new Date(currentDate.getTime() + 24 * 60 * 60 * 1000);
   }
 
-  // 2. Check for ANY existing conflicts
+  // ELITE OPTIMIZATION: Date Range Query instead of Massive OR Array
+  // We only query the DB for the absolute start and end times of the entire batch
+  const firstDate = schedulesToInsert[0].startDateTime;
+  const lastDateInBatch =
+    schedulesToInsert[schedulesToInsert.length - 1].endDateTime;
+
   const existingSchedules = await prisma.schedule.findMany({
     where: {
-      OR: schedulesToInsert.map((schedule) => ({
-        startDateTime: schedule.startDateTime,
-        endDateTime: schedule.endDateTime,
-      })),
+      startDateTime: { gte: firstDate },
+      endDateTime: { lte: lastDateInBatch },
     },
   });
 
-  if (existingSchedules.length > 0) {
-    const conflict = existingSchedules[0];
-    const conflictStart = conflict.startDateTime
-      .toISOString()
-      .replace("T", " ")
-      .substring(0, 16);
-    const conflictEnd = conflict.endDateTime
-      .toISOString()
-      .replace("T", " ")
-      .substring(0, 16);
+  // O(1) JavaScript Set for lightning-fast conflict checking
+  const existingSet = new Set(
+    existingSchedules.map((s) => s.startDateTime.getTime()),
+  );
 
-    throw new Error(
-      `Schedule conflict detected. Slot already exists for ${conflictStart} - ${conflictEnd}`,
-    );
+  // 2. Check for ANY existing conflicts instantly in memory
+  for (const schedule of schedulesToInsert) {
+    if (existingSet.has(schedule.startDateTime.getTime())) {
+      const conflictStart = schedule.startDateTime
+        .toISOString()
+        .replace("T", " ")
+        .substring(0, 16);
+      const conflictEnd = schedule.endDateTime
+        .toISOString()
+        .replace("T", " ")
+        .substring(0, 16);
+      throw new Error(
+        `Schedule conflict detected. Slot already exists for ${conflictStart} - ${conflictEnd}`,
+      );
+    }
   }
 
   // 3. Bulk insert all slots safely
@@ -74,24 +84,30 @@ const insertIntoDB = async (payload: ISchedulePayload) => {
     skipDuplicates: true,
   });
 
-  // 4. Fetch the newly created records from PostgreSQL to get the IDs and timestamps
-  const createdSchedules = await prisma.schedule.findMany({
+  // 4. ELITE OPTIMIZATION: Fetch created records by range, then filter in memory
+  const allSchedulesInRange = await prisma.schedule.findMany({
     where: {
-      OR: schedulesToInsert.map((schedule) => ({
-        startDateTime: schedule.startDateTime,
-        endDateTime: schedule.endDateTime,
-      })),
+      startDateTime: { gte: firstDate },
+      endDateTime: { lte: lastDateInBatch },
     },
     orderBy: {
       startDateTime: "asc",
     },
   });
 
-  // Return the full database objects to the controller
+  // Filter out any global schedules that were already there to return ONLY what we just created
+  const insertedSet = new Set(
+    schedulesToInsert.map((s) => s.startDateTime.getTime()),
+  );
+  const createdSchedules = allSchedulesInRange.filter((s) =>
+    insertedSet.has(s.startDateTime.getTime()),
+  );
+
   return createdSchedules;
 };
 
 const schedulesForDoctor = async (
+  user: JwtPayload,
   filters: IScheduleFilters,
   options: IOptions,
 ) => {
@@ -104,33 +120,39 @@ const schedulesForDoctor = async (
   if (startDateTime && endDateTime) {
     andConditions.push({
       AND: [
-        {
-          startDateTime: {
-            gte: startDateTime,
-          },
-        },
-        {
-          endDateTime: {
-            lte: endDateTime,
-          },
-        },
+        { startDateTime: { gte: startDateTime } },
+        { endDateTime: { lte: endDateTime } },
       ],
     });
   }
 
-  const whereCondition: Prisma.ScheduleWhereInput =
-    andConditions.length > 0 ? { AND: andConditions } : {};
-
-  const schedules = await prisma.schedule.findMany({
-    skip,
-    take: limit,
-    where: whereCondition,
-    orderBy: {
-      [sortBy]: sortOrder,
+  // ELITE OPTIMIZATION: Relational filtering.
+  // We completely deleted the extra query and `notIn` array. PostgreSQL handles this natively now.
+  const whereCondition: Prisma.ScheduleWhereInput = {
+    AND: andConditions.length > 0 ? andConditions : undefined,
+    doctorSchedules: {
+      none: {
+        doctor: {
+          email: user.email,
+        },
+      },
     },
-  });
+  };
 
-  const total = await prisma.schedule.count({ where: whereCondition });
+  // ELITE OPTIMIZATION: Run data fetching and counting in parallel to cut request time in half!
+  const [schedules, total] = await Promise.all([
+    prisma.schedule.findMany({
+      skip,
+      take: limit,
+      where: whereCondition,
+      orderBy: {
+        [sortBy]: sortOrder,
+      },
+    }),
+    prisma.schedule.count({
+      where: whereCondition,
+    }),
+  ]);
 
   return {
     meta: {
@@ -155,75 +177,3 @@ export const ScheduleServices = {
   schedulesForDoctor,
   deleteSchedule,
 };
-
-// ---------------------------- old code -----------------------------
-
-// import { addHours, addMinutes, format } from "date-fns";
-// import { prisma } from "../../shared/prisma";
-// import { ISchedulePayload } from "./schedule.interface";
-
-// const insertIntoDB = async (payload: ISchedulePayload) => {
-//   const { startTime, endTime, startDate, endDate } = payload;
-
-//   const interval = 30; // 30 minutes
-//   const schedules = [];
-
-//   const currentDate = new Date(startDate);
-//   const lastDate = new Date(endDate);
-
-//   while (currentDate <= lastDate) {
-//     const startDateTimeOfDay = new Date(
-//       addMinutes(
-//         addHours(
-//           `${format(currentDate, "yyyy-MM-dd")}`,
-//           Number(startTime.split(":")[0]),
-//         ),
-//         parseInt(startTime.split(":")[1]),
-//       ),
-//     );
-
-//     const endDateTimeOfDay = new Date(
-//       addMinutes(
-//         addHours(
-//           `${format(currentDate, "yyyy-MM-dd")}`,
-//           Number(endTime.split(":")[0]),
-//         ),
-//         parseInt(endTime.split(":")[1]),
-//       ),
-//     );
-
-//     while (startDateTimeOfDay < endDateTimeOfDay) {
-//       const slotStartDateTime = startDateTimeOfDay;
-//       const slotEndDateTime = addMinutes(slotStartDateTime, interval);
-
-//       const scheduleData = {
-//         startDateTime: slotStartDateTime,
-//         endDateTime: slotEndDateTime,
-//       };
-
-//       const existingSchedule = await prisma.schedule.findFirst({
-//         where: scheduleData,
-//       });
-
-//       if (existingSchedule) {
-//         throw new Error(
-//           `Schedule already exists for ${format(slotStartDateTime, "yyyy-MM-dd HH:mm")} - ${format(slotEndDateTime, "yyyy-MM-dd HH:mm")}`,
-//         );
-//       } else {
-//         const result = await prisma.schedule.create({
-//           data: scheduleData,
-//         });
-//         schedules.push(result);
-//       }
-//       slotStartDateTime.setMinutes(slotStartDateTime.getMinutes() + interval);
-//     }
-
-//     currentDate.setDate(currentDate.getDate() + 1);
-//   }
-
-//   return schedules;
-// };
-
-// export const ScheduleServices = {
-//   insertIntoDB,
-// };
