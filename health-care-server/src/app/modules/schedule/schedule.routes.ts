@@ -5,12 +5,20 @@ import { ScheduleController } from "./schedule.controllers";
 
 const router = express.Router();
 
-router.post("/", ScheduleController.insertIntoDB);
+router.post(
+  "/",
+  auth(UserRole.ADMIN, UserRole.DOCTOR),
+  ScheduleController.insertIntoDB,
+);
 router.get(
   "/",
   auth(UserRole.ADMIN, UserRole.DOCTOR),
   ScheduleController.schedulesForDoctor,
 );
-router.delete("/:id", ScheduleController.deleteSchedule);
+router.delete(
+  "/:id",
+  auth(UserRole.ADMIN, UserRole.DOCTOR),
+  ScheduleController.deleteSchedule,
+);
 
 export const scheduleRoutes = router;

@@ -43,7 +43,7 @@ const insertIntoDB = async (payload: ISchedulePayload) => {
     currentDate = new Date(currentDate.getTime() + 24 * 60 * 60 * 1000);
   }
 
-  // ELITE OPTIMIZATION: Date Range Query instead of Massive OR Array
+  // OPTIMIZATION: Date Range Query instead of Massive OR Array
   // We only query the DB for the absolute start and end times of the entire batch
   const firstDate = schedulesToInsert[0].startDateTime;
   const lastDateInBatch =
@@ -126,7 +126,7 @@ const schedulesForDoctor = async (
     });
   }
 
-  // ELITE OPTIMIZATION: Relational filtering.
+  // OPTIMIZATION: Relational filtering.
   // We completely deleted the extra query and `notIn` array. PostgreSQL handles this natively now.
   const whereCondition: Prisma.ScheduleWhereInput = {
     AND: andConditions.length > 0 ? andConditions : undefined,
@@ -139,7 +139,7 @@ const schedulesForDoctor = async (
     },
   };
 
-  // ELITE OPTIMIZATION: Run data fetching and counting in parallel to cut request time in half!
+  // OPTIMIZATION: Run data fetching and counting in parallel to cut request time in half!
   const [schedules, total] = await Promise.all([
     prisma.schedule.findMany({
       skip,
