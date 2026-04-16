@@ -1,5 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { JwtPayload } from "jsonwebtoken";
+import AppError from "../../middlewares/AppError";
 import { prisma } from "../../shared/prisma";
 import { paginationHelper } from "../../utils/paginationHelper";
 import { IOptions } from "../user/user.interfaces";
@@ -72,7 +73,10 @@ const insertIntoDB = async (payload: ISchedulePayload) => {
         .toISOString()
         .replace("T", " ")
         .substring(0, 16);
-      throw new Error(
+
+      // ELITE FIX: Using AppError with 409 Conflict instead of generic Error
+      throw new AppError(
+        409,
         `Schedule conflict detected. Slot already exists for ${conflictStart} - ${conflictEnd}`,
       );
     }

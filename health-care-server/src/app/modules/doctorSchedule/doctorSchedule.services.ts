@@ -1,4 +1,5 @@
 import { IDoctorUser } from "../../commonTypes";
+import AppError from "../../middlewares/AppError";
 import { prisma } from "../../shared/prisma";
 import { IAssignSchedulePayload } from "./doctorSchedule.interface";
 
@@ -6,7 +7,7 @@ const insertIntoDB = async (
   user: IDoctorUser,
   payload: IAssignSchedulePayload,
 ) => {
-  // 1. Fetch the Doctor's ID
+  // 1. Fetch the Doctor's ID (Throws P2025 -> 404 automatically if not found)
   const doctorInfo = await prisma.doctor.findUniqueOrThrow({
     where: {
       email: user.email,
@@ -26,7 +27,9 @@ const insertIntoDB = async (
 
   // 3. Graceful Error Handling
   if (existingSchedules.length > 0) {
-    throw new Error(
+    // ELITE FIX: Using 409 CONFLICT instead of a generic 500 error crash
+    throw new AppError(
+      409,
       "Conflict: You have already assigned yourself to one or more of these schedule slots. Please refresh and try again.",
     );
   }
