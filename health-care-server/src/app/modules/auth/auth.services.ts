@@ -2,9 +2,10 @@ import { UserStatus } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { Secret, SignOptions } from "jsonwebtoken";
 import config from "../../../config";
+import AppError from "../../middlewares/AppError";
 import { prisma } from "../../shared/prisma";
-import { IAuthInfo } from "./auth.interfaces";
 import { generateToken } from "../../utils/generateToken";
+import { IAuthInfo } from "./auth.interfaces";
 
 const login = async (payload: IAuthInfo) => {
   const user = await prisma.user.findUniqueOrThrow({
@@ -14,20 +15,19 @@ const login = async (payload: IAuthInfo) => {
     },
   });
 
-  if (!user) {
-    throw new Error("Invalid email");
-  }
   const needPasswordChange = user.needPasswordChange;
 
+  // 2. Verify password
   const isPasswordMatched = await bcrypt.compare(
     payload.password,
     user.password,
   );
 
   if (!isPasswordMatched) {
-    throw new Error("Invalid password");
+    throw new AppError(400, "Invalid password");
   }
 
+  // 3. Generate JWT Tokens
   const jwtPayload = { email: user.email, role: user.role };
 
   const accessToken = generateToken(
